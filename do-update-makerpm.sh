@@ -263,11 +263,17 @@ elif [[ $ID == "sles" ]]; then
 	if [[ $VERSION_ID == "15" ]]; then
 		distro_dir=SLES12SP4
 	fi
+else
+	distro_dir=RH83
+	compat_dir=RH83
 fi
+
 if [[ ! -d $PWD/compat/$compat_dir ]]; then
 	echo "compat directory $compat_dir is missing, cannot build"
 	exit
 fi
+
+echo "compat_dir_path = $PWD/compat/$compat_dir"
 
 if [[ -d $PWD/distro/$distro_dir/ipoib ]]; then
 	ln -s $PWD/distro/$distro_dir/ipoib drivers/infiniband/ulp/ipoib
@@ -452,10 +458,10 @@ if [ "$DEFAULT_KERNEL_VERSION" == "" ]; then
 fi
 
 if echo $srcdir | grep -q "components";  then
-	rpmrelease=$(git rev-list WFR_driver_first..HEAD -- $srcdir | wc -l)
+	rpmrelease=$(git rev-list opa-10_11_0_1..HEAD -- $srcdir | wc -l)
 	echo "ifs-all build"
 else
-	rpmrelease=$(cd "$srcdir"; git rev-list "WFR_driver_first..HEAD" | wc -l)
+	rpmrelease=$(cd "$srcdir"; git rev-list "opa-10_11_0_1..HEAD" | wc -l)
 	echo "wfr-linux-devel build"
 fi
 rpmrelease=$((rpmrelease + 1400))
@@ -478,8 +484,9 @@ then
 	kernel_rpmver=$(rpm -q --qf %{VERSION} kernel-$(uname -r))
 	kmod_subdir=extra
 else
-	kernel_rpmver=$(rpm -q --qf %{VERSION} kernel-default)
+	#kernel_rpmver=$(rpm -q --qf ${DEFAULT_KERNEL_VERSION} kernel-default)
 	kmod_subdir=updates
+	kernel_rpmver="${DEFAULT_KERNEL_VERSION}"
 fi
 # create a new $rpmname.conf and $rpmname.files
 src_path=$workdir/rpmbuild/SOURCES/
@@ -502,6 +509,7 @@ echo "Copy the working files to $tardir"
 pushd $srcdir/$kerneldir
 for (( i = 0 ; i <= modules_cnt ; i++ ))
 do
+	echo "$files_to_copy[$i] $tardir/$modules[$i]/"
 	cp ${files_to_copy[$i]} $tardir/${modules[$i]}/
 done
 echo "Copying header files"
@@ -520,8 +528,9 @@ cd $workdir
 # create the spec file
 echo "Creating spec file"
 
-if [ $distro = 'rhel' ]
-then
+if [ $distro = 'rhel' ]; then
+	cp $filedir/$rpmname.spec.rhel $workdir/rpmbuild/SPECS/$rpmname.spec
+elif [ $distro = 'ubuntu' ]; then
 	cp $filedir/$rpmname.spec.rhel $workdir/rpmbuild/SPECS/$rpmname.spec
 else
 	cp $filedir/$rpmname.spec.sles $workdir/rpmbuild/SPECS/$rpmname.spec

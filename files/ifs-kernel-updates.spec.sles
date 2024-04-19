@@ -11,7 +11,9 @@ Source0:        %{name}-RPMVERSION.tgz
 Source1:        %{name}.files
 Source2:        %{name}.conf
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root
-BuildRequires:  %kernel_module_package_buildreqs
+BuildRequires:  %{_bindir}/kmodtool
+
+# %kernel_module_package_buildreqs
 
 Requires:       kernel = %(echo %{kver} | sed -e 's/\(.*\).default/\1/g')
 
